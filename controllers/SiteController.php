@@ -2,16 +2,14 @@
 
 namespace app\controllers;
 
-use app\models\search\HistorySearch;
 use Yii;
 use yii\web\Controller;
+use yii\web\Response;
+use app\models\search\HistorySearch;
+use app\jobs\ExportJob;
 
 class SiteController extends Controller
 {
-
-    /**
-     * {@inheritdoc}
-     */
     public function actions()
     {
         return [
@@ -21,29 +19,23 @@ class SiteController extends Controller
         ];
     }
 
-    /**
-     * Displays homepage.
-     *
-     * @return string
-     */
     public function actionIndex()
     {
         return $this->render('index');
     }
 
-
-    /**
-     * @param string $exportType
-     * @return string
-     */
     public function actionExport($exportType)
     {
-        $model = new HistorySearch();
+        $params = Yii::$app->request->queryParams;
 
-        return $this->render('export', [
-            'dataProvider' => $model->search(Yii::$app->request->queryParams),
+        // Enqueue the export job
+        Yii::$app->queue->push(new ExportJob([
             'exportType' => $exportType,
-            'model' => $model
-        ]);
+            'params' => $params,
+        ]));
+
+        Yii::$app->session->setFlash('success', 'Export process has been started. You will be notified once it\'s completed.');
+
+        return $this->redirect(['index']);
     }
 }
