@@ -2,6 +2,7 @@
 
 namespace app\models;
 
+use app\factories\EventFactory;
 use app\models\traits\ObjectNameTrait;
 use Yii;
 use yii\db\ActiveQuery;
@@ -24,30 +25,10 @@ use yii\db\ActiveRecord;
  *
  * @property Customer $customer
  * @property User $user
- *
- * @property Task $task
- * @property Sms $sms
- * @property Call $call
  */
 class History extends ActiveRecord
 {
     use ObjectNameTrait;
-
-    const EVENT_CREATED_TASK = 'created_task';
-    const EVENT_UPDATED_TASK = 'updated_task';
-    const EVENT_COMPLETED_TASK = 'completed_task';
-
-    const EVENT_INCOMING_SMS = 'incoming_sms';
-    const EVENT_OUTGOING_SMS = 'outgoing_sms';
-
-    const EVENT_INCOMING_CALL = 'incoming_call';
-    const EVENT_OUTGOING_CALL = 'outgoing_call';
-
-    const EVENT_INCOMING_FAX = 'incoming_fax';
-    const EVENT_OUTGOING_FAX = 'outgoing_fax';
-
-    const EVENT_CUSTOMER_CHANGE_TYPE = 'customer_change_type';
-    const EVENT_CUSTOMER_CHANGE_QUALITY = 'customer_change_quality';
 
     /**
      * @inheritdoc
@@ -108,46 +89,13 @@ class History extends ActiveRecord
     }
 
     /**
-     * @return array
+     * @return string
      */
-    public static function getEventTexts()
+    public function getEventText(): string
     {
-        return [
-            self::EVENT_CREATED_TASK => Yii::t('app', 'Task created'),
-            self::EVENT_UPDATED_TASK => Yii::t('app', 'Task updated'),
-            self::EVENT_COMPLETED_TASK => Yii::t('app', 'Task completed'),
-
-            self::EVENT_INCOMING_SMS => Yii::t('app', 'Incoming message'),
-            self::EVENT_OUTGOING_SMS => Yii::t('app', 'Outgoing message'),
-
-            self::EVENT_CUSTOMER_CHANGE_TYPE => Yii::t('app', 'Type changed'),
-            self::EVENT_CUSTOMER_CHANGE_QUALITY => Yii::t('app', 'Property changed'),
-
-            self::EVENT_OUTGOING_CALL => Yii::t('app', 'Outgoing call'),
-            self::EVENT_INCOMING_CALL => Yii::t('app', 'Incoming call'),
-
-            self::EVENT_INCOMING_FAX => Yii::t('app', 'Incoming fax'),
-            self::EVENT_OUTGOING_FAX => Yii::t('app', 'Outgoing fax'),
-        ];
+        $event = EventFactory::createEvent($this);
+        return $event->getEventText();
     }
-
-    /**
-     * @param $event
-     * @return mixed
-     */
-    public static function getEventTextByEvent($event)
-    {
-        return static::getEventTexts()[$event] ?? $event;
-    }
-
-    /**
-     * @return mixed|string
-     */
-    public function getEventText()
-    {
-        return static::getEventTextByEvent($this->event);
-    }
-
 
     /**
      * @param $attribute
@@ -156,6 +104,9 @@ class History extends ActiveRecord
     public function getDetailChangedAttribute($attribute)
     {
         $detail = json_decode($this->detail);
+        if ($detail === null) {
+            return null;
+        }
         return isset($detail->changedAttributes->{$attribute}) ? $detail->changedAttributes->{$attribute} : null;
     }
 
@@ -186,6 +137,9 @@ class History extends ActiveRecord
     public function getDetailData($attribute)
     {
         $detail = json_decode($this->detail);
+        if ($detail === null) {
+            return null;
+        }
         return isset($detail->data->{$attribute}) ? $detail->data->{$attribute} : null;
     }
 }

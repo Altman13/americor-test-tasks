@@ -6,35 +6,43 @@ $db = require __DIR__ . '/db.php';
 $config = [
     'id' => 'basic-console',
     'basePath' => dirname(__DIR__),
-    'bootstrap' => ['log'],
+    'bootstrap' => ['log', 'queue'],  // Include 'queue' in bootstrap
     'controllerNamespace' => 'app\commands',
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm'   => '@vendor/npm-asset',
         '@tests' => '@app/tests',
+        '@webroot' => dirname(__DIR__) . '/',
+        '@web' => '/',
     ],
     'components' => [
-//        'cache' => [
-//            'class' => 'yii\caching\FileCache',
-//        ],
         'log' => [
             'targets' => [
                 [
                     'class' => 'yii\log\FileTarget',
-                    'levels' => ['error', 'warning'],
+                    'levels' => ['error', 'warning', 'info', 'trace']
                 ],
             ],
         ],
         'db' => $db,
-    ],
-    'params' => $params,
-    /*
-    'controllerMap' => [
-        'fixture' => [ // Fixture generation command line.
-            'class' => 'yii\faker\FixtureController',
+        'queue' => [
+            'class' => \yii\queue\db\Queue::class,
+            'db' => 'db',  // Database connection component or its config
+            'tableName' => '{{%queue}}',  // Table name
+            'channel' => 'default',  // Queue channel key
+            'mutex' => [
+                'class' => \yii\mutex\MysqlMutex::class,
+                'db' => 'db',
+            ], // Mutex that used to sync queries
         ],
     ],
-    */
+    'params' => $params,
+    'controllerMap' => [
+        'migrate' => [
+            'class' => 'yii\console\controllers\MigrateController',
+            'migrationPath' => '@app/migrations',
+        ],
+    ],
 ];
 
 if (YII_ENV_DEV) {
